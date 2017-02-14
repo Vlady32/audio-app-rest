@@ -11,7 +11,8 @@ module.exports = function (apiRoutes) {
     }else{
       var newUser = new User({
         email: req.body.email,
-        password: req.body.password
+        password: req.body.password,
+        status: req.body.status
       });
       newUser.save(function (err) {
         if(err){
