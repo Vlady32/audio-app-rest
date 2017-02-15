@@ -41,7 +41,7 @@ module.exports = function (apiRoutes) {
             var token = jwt.sign(user, config.secret, {
               expiresIn: "24h" // expires in 24 hours
             });
-            res.json({success: true, token: token, email: req.body.email});
+            res.json({success: true, token: token, email: req.body.email, status: user.status});
           } else {
             res.send({success: false, msg: 'Authentication failed. Wrong password.'});
           }
