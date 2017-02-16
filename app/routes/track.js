@@ -3,9 +3,28 @@ var Category = require('../models/Category');
 var config = require('../../config/database');
 var async = require('async');
 var multer = require('multer');
+var mime = require('mime');
+var fs = require('fs');
 
 var uploadTrack = multer({ dest: './data/music'});
 var uploadImg = multer({ dest: './data/img'});
+
+var storage = multer.diskStorage({
+  destination: function(req, file, cb){
+    if(file.mimetype.indexOf('audio') !== -1){
+      cb(null, './data/music');
+    }else if(file.mimetype.indexOf('image') !== -1){
+      cb(null, './data/img');
+    }
+  },
+  filename: function(req, file, cb){
+    var extArray = file.mimetype.split("/");
+    var extension = extArray[extArray.length - 1];
+    cb(null, Date.now() + '.' + extension);
+  }
+});
+
+var upload = multer({storage: storage});
 
 module.exports = function (apiRoutes) {
 
@@ -15,7 +34,7 @@ module.exports = function (apiRoutes) {
     async.waterfall([
       function(callback){
         if(req.query.search){
-          Track.find({name: new RegExp("^"+req.query.search+'.*', "i")}, function (err, tracks){
+          Track.find({name: new RegExp(".*"+req.query.search+'.*', "i")}, function (err, tracks){
             callback(err, tracks);
           })
         }else if(req.query.category == '/recents'){
@@ -61,72 +80,102 @@ module.exports = function (apiRoutes) {
   });
 
    //add new track
-  apiRoutes.post('/tracks', uploadTrack.single('trackFile'), function (req, res, next) {
+  apiRoutes.post('/tracks', upload.any(), function (req, res) {
 
-    console.log('Track saved');
-    // next();
+    var staticPath = "http://localhost:8080/";
 
-    // console.log('files: ', req.files);
-    // console.log('data: ', req.body);
-    //upload.single('trackFile');
+    var track = new Track({
+      name: req.body.trackName,
+      urlImg: req.files[1] ? (staticPath + "img/" + req.files[1].filename) : (staticPath + "img/" + 'default.png'),
+      urlTrack: staticPath + "music/" + req.files[0].filename,
+      category: req.body.idCategory
+    });
 
-
-    // console.log(req.body);
-
-
-    // res.end(req.file);
-
-
-
-    // console.log(req.body);
-
-    // console.log(req.body.trackFile);
-    // var buf = new Buffer(req.body.trackFile.preview, 'base64');
-    //
-    // fs.writeFile("data/tracks/1.mp3", buf, function(err) {
-    //   if(err) {
-    //     console.log("err", err);
-    //   } else {
-    //     console.log('suc');
-    //     return res.json({'status': 'success'});
-    //   }
-    // })
-
-    // var track = new Track({
-    //   name: req.body.name,
-    //   urlImg: req.body.urlImg,
-    //   urlTrack: req.body.urlTrack,
-    //   category: req.body.category
-    // });
-    //
-    // track.save(function (err) {
-    //   if(err){
-    //     res.json({success: false, msg: 'Error in saving track', error: err.message});
-    //   }else {
-    //     res.json({success: true, msg: 'Track has been successfully added'});
-    //   }
-    // });
+    track.save(function (err) {
+      if(err){
+        res.json({success: false, msg: 'Error in saving track', error: err.message});
+      }else {
+        res.json({success: true, msg: 'Track has been successfully added'});
+      }
+    });
 
   });
 
-  apiRoutes.post('/tracks', uploadImg.single('imgFile'), function (req, res, next) {
+  //update track
+ apiRoutes.put('/changeTrack', upload.any(), function (req, res) {
 
-    console.log('Img saved');
+   var staticPath = "http://localhost:8080/";
 
-  });
+   var indexImg = -1;
+   var indexTrack = -1;
 
+   if(req.files[0] && req.files[0].fieldname == 'trackFile'){
+     indexTrack = 0;
+   }
 
+   if(req.files[0] && req.files[0].fieldname == 'imgFile'){
+     indexImg = 0;
+   }
+
+   if(req.files[1] && req.files[1].fieldname == 'imgFile'){
+     indexImg = 1;
+   }
+
+   Track.find({_id: req.body.idTrack}, function(err, track){
+     if(!err){
+      if(indexTrack !== -1){
+        fs.unlink('data/' + track[0].urlTrack.substring(track[0].urlTrack.indexOf('music')), function(err){
+          console.log(err);
+        });
+      }
+      if(indexImg !== -1){
+        fs.unlink('data/' + track[0].urlImg.substring(track[0].urlImg.indexOf('img')), function(err){
+          console.log(err);
+        });
+      }
+     }
+   })
+
+   Track.findOneAndUpdate({
+     _id: req.body.idTrack
+   },
+   {
+     name: req.body.trackName,
+     urlImg: (indexImg !== -1 && req.files[indexImg]) ? (staticPath + "img/" + req.files[indexImg].filename) : (req.body.imgFile),
+     urlTrack: (indexTrack !== -1 && req.files[indexTrack])? (staticPath + "music/" + req.files[indexTrack].filename) : (req.body.trackFile),
+     category: req.body.idCategory
+   } ,function (err) {
+     console.log(err);
+     if(err){
+       res.json({success: false, msg: 'Track has not been updated', error: err.message});
+     }
+     else{
+       res.json({success: true, msg: 'Track has been successfully updated'});
+     }
+   });
+
+ });
 
   //delete track
   apiRoutes.delete('/tracks/:track_id', function (req, res) {
 
-    Track.findOneAndRemove({_id: req.params.track_id}, function (err) {
-      if(err){
-        res.json({success: false, msg: "Track has not been deleted", error: err.message});
-      }else{
-        res.json({success: true, msg: "Track has been successfully deleted"});
+    Track.find({_id: req.params.track_id}, function(err, track){
+      if(!err){
+        fs.unlink('data/' + track[0].urlTrack.substring(track[0].urlTrack.indexOf('music')), function(err){
+           console.log(err);
+        });
+        fs.unlink('data/' + track[0].urlImg.substring(track[0].urlImg.indexOf('img')), function(err){
+           console.log(err);
+        });
+       Track.findOneAndRemove({_id: req.params.track_id}, function (err) {
+         if(err){
+           res.json({success: false, msg: "Track has not been deleted", error: err.message});
+         }else{
+           res.json({success: true, msg: "Track has been successfully deleted"});
+         }
+       });
       }
-    });
+    })
 
   });
 
