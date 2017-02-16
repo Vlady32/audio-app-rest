@@ -4,7 +4,8 @@ var config = require('../../config/database');
 var async = require('async');
 var multer = require('multer');
 
-var upload = multer({ dest: './data/music'});
+var uploadTrack = multer({ dest: './data/music'});
+var uploadImg = multer({ dest: './data/img'});
 
 module.exports = function (apiRoutes) {
 
@@ -60,9 +61,18 @@ module.exports = function (apiRoutes) {
   });
 
    //add new track
-  apiRoutes.put('/tracks', upload.single('track'), function (req, res, next) {
+  apiRoutes.post('/tracks', uploadTrack.single('trackFile'), function (req, res, next) {
 
-    console.log(req.file);
+    console.log('Track saved');
+    // next();
+
+    // console.log('files: ', req.files);
+    // console.log('data: ', req.body);
+    //upload.single('trackFile');
+
+
+    // console.log(req.body);
+
 
     // res.end(req.file);
 
@@ -98,6 +108,14 @@ module.exports = function (apiRoutes) {
     // });
 
   });
+
+  apiRoutes.post('/tracks', uploadImg.single('imgFile'), function (req, res, next) {
+
+    console.log('Img saved');
+
+  });
+
+
 
   //delete track
   apiRoutes.delete('/tracks/:track_id', function (req, res) {
