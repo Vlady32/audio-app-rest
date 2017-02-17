@@ -52,9 +52,13 @@ module.exports = function(apiRoutes) {
             callback(err, tracks);
           })
         } else if (req.query.category) {
-          var category = req.query.category.substring(1);
-          Track.find({category: category}).exec(function(err, tracks) {
-            callback(err, tracks);
+          var nameCategory = req.query.category.substring(1);
+          Category.find({name: nameCategory}, function(err, category){
+            if(!err){
+              Track.find({category: category[0]._id}).exec(function(err, tracks) {
+                callback(err, tracks);
+              })
+            }
           })
         }else {
           Track.find({}).sort({countViews: 'desc'}).exec(function(err, tracks) {
