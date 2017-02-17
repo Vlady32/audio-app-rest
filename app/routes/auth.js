@@ -2,22 +2,18 @@ var User = require('../models/user');
 var jwt = require('jsonwebtoken');
 var config = require('../../config/database');
 
-module.exports = function (apiRoutes) {
+module.exports = function(apiRoutes) {
 
-  apiRoutes.post('/register', function (req, res) {
+  apiRoutes.post('/register', function(req, res) {
 
-    if(!req.body.email || !req.body.password){
+    if (!req.body.email || !req.body.password) {
       res.json({success: false, msg: 'Please pass name and password'});
-    }else{
-      var newUser = new User({
-        email: req.body.email,
-        password: req.body.password,
-        status: req.body.status
-      });
-      newUser.save(function (err) {
-        if(err){
+    } else {
+      var newUser = new User({email: req.body.email, password: req.body.password, status: req.body.status});
+      newUser.save(function(err) {
+        if (err) {
           res.json({success: false, msg: 'Email already exists'});
-        }else {
+        } else {
           res.json({success: true, msg: 'You have been successfully registered'});
         }
       });
@@ -30,12 +26,13 @@ module.exports = function (apiRoutes) {
     User.findOne({
       email: req.body.email
     }, function(err, user) {
-      if (err) throw err;
+      if (err)
+        throw err;
       if (!user) {
         res.send({success: false, msg: 'Authentication failed. User was not found.'});
       } else {
         // check if password matches
-        user.comparePasswords(req.body.password, function (err, isMatch) {
+        user.comparePasswords(req.body.password, function(err, isMatch) {
           if (isMatch && !err) {
             // if user is found and password is right create a token
             var token = jwt.sign(user, config.secret, {

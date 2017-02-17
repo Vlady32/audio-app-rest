@@ -25,10 +25,10 @@ require('./app/routes')(apiRoutes);
 
 app.use('/api', apiRoutes);
 
-app.use(function(err, req, res, next){
+app.use(function(err, req, res, next) {
   res.status(err.status || 500);
-  morgan.error('Internal error(%d): %s',res.statusCode,err.message);
-  res.send({ error: err.message });
+  morgan.error('Internal error(%d): %s', res.statusCode, err.message);
+  res.send({error: err.message});
   next();
 });
 

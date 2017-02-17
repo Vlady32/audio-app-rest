@@ -1,4 +1,4 @@
-module.exports = function (apiRoutes) {
+module.exports = function(apiRoutes) {
   require('./auth')(apiRoutes);
   require('./checkTokenMDW')(apiRoutes);
   require('./users')(apiRoutes);

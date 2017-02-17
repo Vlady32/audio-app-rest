@@ -1,11 +1,11 @@
 var jwt = require('jsonwebtoken');
 var config = require('../../config/database');
 
-module.exports = function(apiRoutes){
+module.exports = function(apiRoutes) {
 
   apiRoutes.use(function(req, res, next) {
-    
-    if(req.query.category !== '/favorites' || (req.query.idTrack && req.Url.pathname == '/comments/')){
+
+    if (req.query.category !== '/favorites' || (req.query.idTrack && req.Url.pathname == '/comments/')) {
       next();
       return;
     }
@@ -15,17 +15,14 @@ module.exports = function(apiRoutes){
     if (token) {
       jwt.verify(token, config.secret, function(err, decoded) {
         if (err) {
-          return res.json({ success: false, message: 'Failed to authenticate token.' });
+          return res.json({success: false, token: false, message: 'Failed to authenticate token.'});
         } else {
           req.decoded = decoded;
           next();
         }
       });
     } else {
-      return res.status(403).send({
-        success: false,
-        message: 'No token provided.'
-      });
+      return res.status(403).send({success: false, token: false,  message: 'No token provided.'});
     }
   });
 };
